@@ -23,11 +23,15 @@ GATK_SCRIPT="$SCRIPT_DIR""AccountingAndPrep/checkSplitAndCollectSizes_gatk.sh"
 bash "$GATK_SCRIPT" \
      "$GATK_VCF_MASTER"  \
      "$ANALYSIS_DIR_MASTER" \
+     "$GATK_CPX_DERIVED_ONE_SEG_VCF_MASTER" \
+     "$GATK_CPX_DERIVED_MULTI_SEG_VCF_MASTER" \
      "$REF_VER"
 
 bash "$GATK_SCRIPT" \
      "$GATK_VCF_FEATURE"  \
      "$ANALYSIS_DIR_FEATURE" \
+     "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" \
+     "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" \
      "$REF_VER"
 
 echo "#################################################"

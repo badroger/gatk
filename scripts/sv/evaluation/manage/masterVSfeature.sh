@@ -26,13 +26,23 @@ elif [[ "$GATK_VCF_FEATURE" == *.vcf  ]]; then
     GATKVCF_f="$GATK_VCF_FEATURE"
 fi
 
-if [[ "$GATK_CPX_VCF_FEATURE" == *.vcf.gz ]]; then
-    COMPRESSED=$(basename "$GATK_CPX_VCF_FEATURE")
+if [[ "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" == *.vcf.gz ]]; then
+    COMPRESSED=$(basename "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE")
     pattern=".gz"
     GATKVCF_c=${COMPRESSED//$pattern/}
-    bgzip -c -d "$GATK_CPX_VCF_FEATURE" > "$GATKVCF_c"
-elif [[ "$GATK_CPX_VCF_FEATURE" == *.vcf  ]]; then
-    GATKVCF_c="$GATK_CPX_VCF_FEATURE"
+    bgzip -c -d "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" > "$GATKVCF_c"
+elif [[ "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" == *.vcf  ]]; then
+    GATKVCF_c="$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE"
+fi
+
+
+if [[ "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" == *.vcf.gz ]]; then
+    COMPRESSED=$(basename "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE")
+    pattern=".gz"
+    GATKVCF_c=${COMPRESSED//$pattern/}
+    bgzip -c -d "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" > "$GATKVCF_c"
+elif [[ "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" == *.vcf  ]]; then
+    GATKVCF_c="$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE"
 fi
 
 cd "$ANALYSIS_DIR_MASTER_VS_FEATURE"
@@ -49,13 +59,13 @@ cat "$ANALYSIS_DIR_MASTER""Deletion/gatkIDsNoMatchingPacBio.txt" \
 
 cat "$ANALYSIS_DIR_FEATURE""Deletion/gatkIDsWithMatchingPacBio.txt" \
     "$ANALYSIS_DIR_FEATURE""InsDupRPL/gatkIDsWithMatchingPacBio.txt" \
-    "$ANALYSIS_DIR_FEATURE""CPX/gatkIDsWithMatchingPacBio.txt" \
     | sort > "feature.gatkIDsWithMatchingPacBio.txt"
+    # "$ANALYSIS_DIR_FEATURE""CPX/gatkIDsWithMatchingPacBio.txt" \
 
 cat "$ANALYSIS_DIR_FEATURE""Deletion/gatkIDsNoMatchingPacBio.txt" \
     "$ANALYSIS_DIR_FEATURE""InsDupRPL/gatkIDsNoMatchingPacBio.txt" \
-    "$ANALYSIS_DIR_FEATURE""CPX/gatkIDsNoMatchingPacBio.txt" \
     | sort > "feature.gatkIDsNoMatchingPacBio.txt"
+    # "$ANALYSIS_DIR_FEATURE""CPX/gatkIDsNoMatchingPacBio.txt" \
 
 echo "Number of variants \"validated\" by PacBio haploid callsets from master:"
 wc -l "master.gatkIDsWithMatchingPacBio.txt" | awk '{print $1}'
