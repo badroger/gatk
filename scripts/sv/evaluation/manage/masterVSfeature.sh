@@ -29,20 +29,20 @@ fi
 if [[ "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" == *.vcf.gz ]]; then
     COMPRESSED=$(basename "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE")
     pattern=".gz"
-    GATKVCF_c=${COMPRESSED//$pattern/}
-    bgzip -c -d "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" > "$GATKVCF_c"
+    GATKVCF_c_1=${COMPRESSED//$pattern/}
+    bgzip -c -d "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" > "$GATKVCF_c_1"
 elif [[ "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" == *.vcf  ]]; then
-    GATKVCF_c="$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE"
+    GATKVCF_c_1="$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE"
 fi
 
 
 if [[ "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" == *.vcf.gz ]]; then
     COMPRESSED=$(basename "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE")
     pattern=".gz"
-    GATKVCF_c=${COMPRESSED//$pattern/}
-    bgzip -c -d "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" > "$GATKVCF_c"
+    GATKVCF_c_2=${COMPRESSED//$pattern/}
+    bgzip -c -d "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" > "$GATKVCF_c_2"
 elif [[ "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" == *.vcf  ]]; then
-    GATKVCF_c="$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE"
+    GATKVCF_c_2="$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE"
 fi
 
 cd "$ANALYSIS_DIR_MASTER_VS_FEATURE"
@@ -80,19 +80,22 @@ wc -l "shared.gatkIDsWithMatchingPacBio.txt" | awk '{print $1}'
 
 
 echo "Number of variants NOT \"validated\" by PacBio haploid callsets from master:"
-wc -l "master.gatkIDsNOMatchingPacBio.txt" | awk '{print $1}'
+wc -l "master.gatkIDsNoMatchingPacBio.txt" | awk '{print $1}'
 echo "Number of variants NOT \"validated\" by PacBio haploid callsets from feature:"
-wc -l "feature.gatkIDsNOMatchingPacBio.txt" | awk '{print $1}'
+wc -l "feature.gatkIDsNoMatchingPacBio.txt" | awk '{print $1}'
 echo "The number of variants shared by them is"
 comm -12 \
-    "master.gatkIDsNOMatchingPacBio.txt" \
-    "feature.gatkIDsNOMatchingPacBio.txt" \
-    > "shared.gatkIDsNOMatchingPacBio.txt"
+    "master.gatkIDsNoMatchingPacBio.txt" \
+    "feature.gatkIDsNoMatchingPacBio.txt" \
+    > "shared.gatkIDsNoMatchingPacBio.txt"
 wc -l "shared.gatkIDsNoMatchingPacBio.txt" | awk '{print $1}'
 
 
 ###################
 ## extract assembly contigs that triggered only calls in either mater or feature but not both
+
+echo "Now extract FN (validated in master but absent in feature) and FP (appear in feature but unvalidated by PacBio)"
+# master only contigs
 comm -23 \
     "master.gatkIDsWithMatchingPacBio.txt" \
     "feature.gatkIDsWithMatchingPacBio.txt" \
@@ -101,42 +104,58 @@ grep -f "temp.masterOnly.gatkIDsWithMatchingPacBio.txt" "$GATKVCF_m" | \
     grep -Eo 'CTG_NAMES=asm[0-9]{6,6}:tig[0-9]{5,5}(,asm[0-9]{6,6}:tig[0-9]{5,5}){0,}' | \
     tr ',' '\n' | sort | uniq > masterOnly.ctgNamesWithMatchingPacBio.txt
 
+# feature only contigs
 comm -13 \
-    "master.gatkIDsWithMatchingPacBio.txt" \
-    "feature.gatkIDsWithMatchingPacBio.txt" \
-    | sort > "temp.featureOnly.gatkIDsWithMatchingPacBio.txt"
-grep -f "temp.featureOnly.gatkIDsWithMatchingPacBio.txt" "$GATKVCF_f" | \
+    "master.gatkIDsNoMatchingPacBio.txt" \
+    "feature.gatkIDsNoMatchingPacBio.txt" \
+    | sort > "temp.featureOnly.gatkIDsNoMatchingPacBio.txt"
+grep -f "temp.featureOnly.gatkIDsNoMatchingPacBio.txt" "$GATKVCF_f" | \
     grep -Eo 'CTG_NAMES=asm[0-9]{6,6}:tig[0-9]{5,5}(,asm[0-9]{6,6}:tig[0-9]{5,5}){0,}' | \
-    tr ',' '\n' | sort | uniq > temp.featureOnly.ctgNamesWithMatchingPacBio.1.txt
-grep -f "temp.featureOnly.gatkIDsWithMatchingPacBio.txt" "$GATKVCF_c" | \
+    tr ',' '\n' | sort | uniq > temp.featureOnly.ctgNamesNoMatchingPacBio.1.txt
+grep -f "temp.featureOnly.gatkIDsNoMatchingPacBio.txt" "$GATKVCF_c_1" | \
     grep -Eo 'CTG_NAMES=asm[0-9]{6,6}:tig[0-9]{5,5}(,asm[0-9]{6,6}:tig[0-9]{5,5}){0,}' | \
-    tr ',' '\n' | sort | uniq > temp.featureOnly.ctgNamesWithMatchingPacBio.2.txt
-cat temp.featureOnly.ctgNamesWithMatchingPacBio.1.txt \
-    temp.featureOnly.ctgNamesWithMatchingPacBio.2.txt | \
-    sort | uniq > featureOnly.ctgNamesWithMatchingPacBio.txt
+    tr ',' '\n' | sort | uniq > temp.featureOnly.ctgNamesNoMatchingPacBio.2.txt
+grep -f "temp.featureOnly.gatkIDsNoMatchingPacBio.txt" "$GATKVCF_c_2" | \
+    grep -Eo 'CTG_NAMES=asm[0-9]{6,6}:tig[0-9]{5,5}(,asm[0-9]{6,6}:tig[0-9]{5,5}){0,}' | \
+    tr ',' '\n' | sort | uniq > temp.featureOnly.ctgNamesNoMatchingPacBio.3.txt
+cat temp.featureOnly.ctgNamesNoMatchingPacBio.1.txt \
+    temp.featureOnly.ctgNamesNoMatchingPacBio.2.txt \
+    temp.featureOnly.ctgNamesNoMatchingPacBio.3.txt | \
+    sort | uniq > featureOnly.ctgNamesNoMatchingPacBio.txt
 
 ## then extract BED files based on the assembly names
 grep -f masterOnly.ctgNamesWithMatchingPacBio.txt "$GATKVCF_m" | \
-    awk 'match($8, /END=[0-9]+/){ending=substr($8,RSTART+4,RLENGTH-4); print $1",$2,"ending",MASTER"}' \
+    awk 'match($8, /END=[0-9]+/){ending=substr($8,RSTART+4,RLENGTH-4); print $1","$2","ending",MASTER"}' \
     > temp.singletons.bed
-grep -f featureOnly.ctgNamesWithMatchingPacBio.txt "$GATKVCF_f" | \
-    awk 'match($8, /END=[0-9]+/){ending=substr($8,RSTART+4,RLENGTH-4); print $1",$2,"ending",FEATURE"}' \
+grep -f featureOnly.ctgNamesNOMatchingPacBio.txt "$GATKVCF_f" | \
+    awk 'match($8, /END=[0-9]+/){ending=substr($8,RSTART+4,RLENGTH-4); print $1","$2","ending",FEATURE"}' \
     >> temp.singletons.bed
-grep -f featureOnly.ctgNamesWithMatchingPacBio.txt "$GATKVCF_c" | \
-    awk 'match($8, /END=[0-9]+/){ending=substr($8,RSTART+4,RLENGTH-4); print $1",$2,"ending",FEATURE"}' \
+grep -f featureOnly.ctgNamesNOMatchingPacBio.txt "$GATKVCF_c_1" | \
+    awk 'match($8, /END=[0-9]+/){ending=substr($8,RSTART+4,RLENGTH-4); print $1","$2","ending",FEATURE"}{print $1","$2","$2",FEATURE"}' \
     >> temp.singletons.bed
-cat temp.singletons.bed | tr ',' '\t' | gsort -V > singletons.bed
+grep -f featureOnly.ctgNamesNOMatchingPacBio.txt "$GATKVCF_c_2" | \
+    awk 'match($8, /END=[0-9]+/){ending=substr($8,RSTART+4,RLENGTH-4); print $1","$2","ending",FEATURE"}{print $1","$2","$2",FEATURE"}' \
+    >> temp.singletons.bed
+sed -e $'s/,/\t/g' temp.singletons.bed | gsort -V > suspectsFNorFP.bed
+echo "BED file storing records:"
+echo "  1. matched by PacBio exist only in master, and "
+echo "  1. not matched by PacBio exist only in feature"
+echo "is output to"
+realpath suspectsFNorFP.bed
 
 ########## clean up
 rm -f temp*
-if [[ $1 == *.vcf.gz ]]; then
+if [[ "$GATK_VCF_MASTER" == *.vcf.gz ]]; then
     rm -f "$GATKVCF_m"
 fi
-if [[ $2 == *.vcf.gz ]]; then
+if [[ "$GATK_VCF_FEATURE" == *.vcf.gz ]]; then
     rm -f "$GATKVCF_f"
 fi
-if [[ $3 == *.vcf.gz ]]; then
-    rm -f "$GATKVCF_c"
+if [[ "$GATK_CPX_DERIVED_ONE_SEG_VCF_FEATURE" == *.vcf.gz ]]; then
+    rm -f "$GATKVCF_c_1"
+fi
+if [[ "$GATK_CPX_DERIVED_MULTI_SEG_VCF_FEATURE" == *.vcf.gz ]]; then
+    rm -f "$GATKVCF_c_2"
 fi
 
 echo -e '\033[0;35m#################################################\033[0m'

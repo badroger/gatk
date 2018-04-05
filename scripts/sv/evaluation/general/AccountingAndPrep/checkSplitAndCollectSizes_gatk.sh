@@ -29,6 +29,7 @@ fi
 mkdir -p "$OUTPUT_DIR"
 
 
+GATK_one_seg_VCF=""
 if [[ $3 == *.vcf.gz ]]; then
     COMPRESSED=$(basename "$3")
     pattern=".gz"
@@ -36,10 +37,9 @@ if [[ $3 == *.vcf.gz ]]; then
     bgzip -c -d "$3" > "$GATK_one_seg_VCF"
 elif [[ $3 == *.vcf  ]]; then
     GATK_one_seg_VCF=$3
-else
-    GATK_one_seg_VCF=""
 fi
 
+GATK_multi_seg_VCF=""
 if [[ $4 == *.vcf.gz ]]; then
     COMPRESSED=$(basename "$4")
     pattern=".gz"
@@ -47,8 +47,6 @@ if [[ $4 == *.vcf.gz ]]; then
     bgzip -c -d "$4" > "$GATK_multi_seg_VCF"
 elif [[ $4 == *.vcf  ]]; then
     GATK_multi_seg_VCF=$4
-else
-    GATK_multi_seg_VCF=""
 fi
 
 
@@ -133,7 +131,7 @@ echo "#################################################"
 echo "Done checking on"
 echo "  $1"
 
-if [[ -z "${GATK_one_seg_VCF+x}" && -z "${GATK_multi_seg_VCF+x}" ]]; then
+if [[ ! -z "${GATK_one_seg_VCF}" ]] && [[ ! -z "${GATK_multi_seg_VCF}" ]]; then
 
     echo "Now merging $1 with $3 and $4"
     echo
